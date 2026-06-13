@@ -1,5 +1,4 @@
 package miyo
-
 type TokenKind uint8
 
 const (

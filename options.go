@@ -1,5 +1,4 @@
 package miyo
-
 type Options struct {
 	ParseTitle           bool
 	ParseEpisode         bool

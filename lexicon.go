@@ -1,5 +1,4 @@
 package miyo
-
 import "strings"
 
 type LexiconEntry struct {

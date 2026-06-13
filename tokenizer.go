@@ -1,5 +1,4 @@
 package miyo
-
 import "regexp"
 
 var splitTokenRegexp = regexp.MustCompile(`(?i)^(.+[^A-Za-z0-9])([SE]\d{1,2}|v\d|\d{1,4})$`)

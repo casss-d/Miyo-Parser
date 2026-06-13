@@ -1,5 +1,4 @@
 package miyo
-
 type Tag string
 
 const (

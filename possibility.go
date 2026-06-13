@@ -1,5 +1,4 @@
 package miyo
-
 type Possibility struct {
 	Tag        Tag
 	Descriptor Tag

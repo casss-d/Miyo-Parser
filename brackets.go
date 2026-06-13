@@ -1,5 +1,4 @@
 package miyo
-
 type BracketGroup struct {
 	ID        int
 	Open      int

@@ -1,5 +1,4 @@
 package miyo
-
 import "sort"
 
 func (p *parser) collectMetadata() {

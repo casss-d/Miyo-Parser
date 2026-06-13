@@ -1,5 +1,4 @@
 package miyo
-
 var lexiconEntries = []LexiconEntry{
 	{Key: "AAC", Tag: TagAudioTerm, Canonical: "AAC"},
 	{Key: "AAC2.0", Tag: TagAudioTerm, Canonical: "AAC"},

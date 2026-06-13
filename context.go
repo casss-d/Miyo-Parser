@@ -1,5 +1,4 @@
 package miyo
-
 // contextualSupportScore returns a numeric score indicating how much the context
 // supports the token span [start, end] being interpreted as metadata rather than title text.
 func (p *parser) contextualSupportScore(start int, end int) float64 {

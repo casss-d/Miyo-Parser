@@ -1,5 +1,4 @@
 package miyo
-
 import "strings"
 
 func (p *parser) detectTitle() {

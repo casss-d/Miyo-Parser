@@ -1,5 +1,4 @@
 package miyo
-
 type DebugResult struct {
 	Tokens  []DebugToken `json:"tokens"`
 	Matches []DebugMatch `json:"matches"`

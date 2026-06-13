@@ -1,5 +1,4 @@
 package miyo
-
 const Developer = "CassD"
 
 type Metadata struct {

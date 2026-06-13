@@ -1,3 +1,3 @@
-module github.com/CassD/miyo-parser
+module github.com/CassD/miyo
 
 go 1.26

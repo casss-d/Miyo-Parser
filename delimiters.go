@@ -1,5 +1,4 @@
 package miyo
-
 import "strings"
 
 var bracketPairs = map[string]string{

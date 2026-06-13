@@ -1,131 +1,165 @@
-# Miyo
+# Miyo Parser
 
-[![License: MPL 2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
-[![Go Reference](https://pkg.go.dev/badge/github.com/casss-d/miyo-parser.svg)](https://pkg.go.dev/github.com/casss-d/miyo-parser)
+[![Go Reference](https://pkg.go.dev/badge/github.com/casss-d/miyo.svg)](https://pkg.go.dev/github.com/casss-d/miyo)
+[![License](https://img.shields.io/github/license/casss-d/miyo.svg)](LICENSE)
 
-Miyo is a deterministic, high-performance anime filename parser for Go. 
+Miyo Parser is a Go library designed to extract structured metadata from media and anime filenames. It parses complex titles to retrieve series names, seasons, episodes, release groups, technical video/audio specifications, and subtitle languages.
 
-Parsing anime media filenames—where naming conventions are notoriously chaotic and inconsistent—is incredibly difficult. Unlike traditional regex-based approaches that break under the weight of edge cases, Miyo utilizes a **heuristic scoring engine**. Confidence accumulates from multiple signals (position, context, keywords, and patterns) to handle the wild variety of fansub naming conventions gracefully.
+The parser uses a tokenization pipeline combined with bracket group analysis and contextual scoring heuristics to resolve ambiguities (e.g., distinguishing whether a number is a season, an episode, or part of the title itself).
 
+---
 
 ## Features
 
-* **Heuristic Scoring:** Tokens aren't guessed instantly; they accumulate possibilities and scores, resolving ambiguities perfectly (e.g., is "OP" a release group, an Opening Theme, or part of "ONE PIECE"?).
-* **Context-Aware:** Intelligently differentiates between "English" as an audio language, a subtitle language, or a word in the title (like *English Teacher*).
-* **Full-Width Rune Normalization:** Automatically handles Japanese full-width alphanumeric characters (e.g., `１０８０ｐ` → `1080p`).
-* **Zero Dependencies:** Built entirely with the Go standard library. Fast, safe, and portable.
-* **Debuggable:** Built-in debug tracing to output the exact token states, possibilities, and scores as JSON.
+- **Title Extraction:** Trims release groups, bracketed metadata, and structural delimiters to recover the canonical series title.
+- **Sequence Parsing:** Identifies seasons, episodes, parts, and volumes across diverse patterns (such as standard `S01E02`, absolute numbers, ordinal notations, and Japanese counters like `第2期` / `01話`).
+- **Context-Aware Heuristics:** Uses a localized scoring engine to evaluate neighboring tokens, helping avoid false positives on numbers within titles (e.g., *Blue Submarine No.6*).
+- **Technical Metadata Extraction:**
+  - **Video:** Resolution (e.g., `1080p`, `2160p`, `4K`), codecs (e.g., `HEVC`, `x265`, `H.264`), color depth, and HDR.
+  - **Audio:** Codecs and formats (e.g., `FLAC`, `AAC`, `DDP5.1`, `TrueHD`, `Atmos`).
+  - **Release Information:** Sources (`Blu-ray`, `WEB-DL`, `HDTV`), release groups, versions, and validation hashes (checksums).
+- **Language Detection:** Detects audio and subtitle languages (e.g., `VOSTFR`, `Dual Audio`, `Multi-Subs`).
+
+---
 
 ## Installation
 
+To integrate Miyo Parser into your Go project:
+
 ```bash
-go get github.com/casss-d/miyo-parser
+go get github.com/casss-d/miyo
 ```
 
+---
+
 ## Quick Start
+
+### Basic Usage
+
+Use the `Parse` function to quickly analyze a filename with default options:
 
 ```go
 package main
 
 import (
-    "encoding/json"
-    "fmt"
-    "github.com/casss-d/miyo-parser"
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/casss-d/miyo"
 )
 
 func main() {
-    filename := "[TaigaSubs]_Toradora!_(2008)_-_01v2_-_Tiger_and_Dragon_[1280x720_H.264_FLAC][1234ABCD].mkv"
-    
-    // Parse the filename into a structured Metadata object
-    meta := miyo.Parse(filename)
+	filename := "[SubsPlease] Sousou no Frieren - 14 [1080p].mkv"
+	metadata := miyo.Parse(filename)
 
-    fmt.Println("Title:", meta.Title)                     // Toradora!
-    fmt.Println("Year:", meta.Year)                       // 2008
-    fmt.Println("Episode:", meta.EpisodeNumber[0])        // 1
-    fmt.Println("Resolution:", meta.VideoResolution)      // 1280x720
-    fmt.Println("Release Group:", meta.ReleaseGroup)      // TaigaSubs
-    fmt.Println("File Checksum:", meta.FileChecksum)      // 1234ABCD
+	fmt.Printf("Title: %s\n", metadata.Title)
+	fmt.Printf("Episode: %s\n", metadata.EpisodeNumber[0])
+	fmt.Printf("Resolution: %s\n", metadata.VideoResolution)
+	fmt.Printf("Release Group: %s\n", metadata.ReleaseGroup)
+	fmt.Printf("Extension: %s\n", metadata.FileExtension)
 }
 ```
 
-## Advanced Usage
+### Advanced Parsing with Options
 
-### Custom Configuration
-
-You can customize the parsing behavior by passing a `miyo.Options` struct. You can disable specific parsers to speed up execution or avoid false positives if you only care about specific fields.
+You can customize parsing behavior or restrict specific scans using the `Options` struct:
 
 ```go
-options := miyo.Options{
-    DisableTitle:       false,
-    DisableEpisode:     false,
-    ParseFileChecksum:  true,
-    YearMin:            1960,
-    YearMax:            2030,
+package main
+
+import (
+	"fmt"
+	"github.com/casss-d/miyo"
+)
+
+func main() {
+	filename := "[TaigaSubs]_Toradora!_(2008)_-_01v2_[1280x720_H.264_FLAC][1234ABCD].mkv"
+
+	// Configure parsing constraints
+	options := miyo.Options{
+		YearMin: 2000,
+		YearMax: 2030,
+		// Turn off specific features if they are not needed
+		DisableFileChecksum: false, 
+	}
+
+	metadata := miyo.ParseWithOptions(filename, options)
+	fmt.Printf("Formatted Title: %s\n", metadata.FormattedTitle)
+	fmt.Printf("Checksum: %s\n", metadata.FileChecksum)
 }
-
-meta := miyo.ParseWithOptions("[Group] Title - 01 [1080p].mkv", options)
 ```
 
-### Parsing with Filepaths
+---
 
-If you have a full directory path, you can use `ParsePath` to automatically extract context from the parent folders.
+## JSON Metadata Representation
 
-```go
-meta := miyo.ParsePath("/anime/Toradora/[Group] Toradora! - 01.mkv", miyo.Options{})
+When serialized, the `Metadata` struct produces structured, consumer-friendly output:
+
+```json
+{
+  "file_name": "[Anime Time] Sword Art Online (S01+S02) [BD][Dual Audio][1080p][Batch].mkv",
+  "title": "Sword Art Online",
+  "formatted_title": "Sword Art Online",
+  "season_number": ["1", "2"],
+  "anime_type": ["Batch"],
+  "audio_term": ["Dual Audio"],
+  "file_extension": "mkv",
+  "release_group": "Anime Time",
+  "release_information": ["Batch"],
+  "source": ["BD"],
+  "video_resolution": "1080p",
+  "series": [
+    {
+      "title": "Sword Art Online",
+      "season": [
+        { "number": "1" },
+        { "number": "2" }
+      ]
+    }
+  ]
+}
 ```
 
-### Debugging
+---
 
-If a filename isn't parsing the way you expect, Miyo includes a powerful debug mode that returns the exact scoring logic used under the hood.
+## Architecture Overview
 
-```go
-meta, debugInfo := miyo.ParseDebug("[Group] Title - 01.mkv", miyo.Options{})
+Miyo Parser divides processing into distinct, predictable steps:
 
-// debugInfo contains Tokens, Matches, and the scoring map for each possibility
-debugJSON, _ := json.MarshalIndent(debugInfo, "", "  ")
-fmt.Println(string(debugJSON))
+1. **Tokenization:** Splits the raw input string into classified tokens (e.g., text, plain delimiters, context delimiters, and brackets).
+2. **Bracket Analysis:** Matches open/close pairs to build structural `BracketGroup` contexts.
+3. **Metadata Scanning:** Evaluates patterns and checks lexical entries to assign candidate metadata tags (such as resolution, audio formats, language, and sequences).
+4. **Contextual & Heuristic Resolution:** Scores candidates numerically based on neighboring elements and position to separate legitimate title text from technical metadata.
+5. **Title Recovery:** Dynamically determines boundaries, cleans up spacing and punctuation, and extracts both the primary and episode titles.
+6. **Metadata Assembly:** Aggregates findings into the final structured `Metadata` object.
+
+---
+
+## Integration with Other Languages (JSON Worker)
+
+The project includes a command-line utility, `cmd/miyo-parse-worker`, designed to run as a persistent background process. It reads filenames from `stdin` and writes JSON results to `stdout`, providing a clean path for integration with scripts written in languages like Python, Node.js, or Rust.
+
+To start the worker:
+
+```bash
+go run ./cmd/miyo-parse-worker
 ```
 
-## Output Structure
+---
 
-Miyo returns a `*miyo.Metadata` struct containing flat fields for easy access, as well as a structured `Series` slice for complex media. 
+## Testing
 
-| Field | Type | Example |
-|---|---|---|
-| `FileName` | `string` | `"[Group] Title - 01.mkv"` |
-| `Title` | `string` | `"Title"` |
-| `ReleaseGroup` | `string` | `"Group"` |
-| `EpisodeNumber` | `[]string` | `["1"]` |
-| `SeasonNumber` | `[]string` | `["2"]` |
-| `EpisodeTitle` | `string` | `"The Beginning"` |
-| `VideoResolution` | `string` | `"1080p"` |
-| `VideoTerm` | `[]string` | `["H.264", "x265"]` |
-| `AudioTerm` | `[]string` | `["FLAC", "Dual Audio"]` |
-| `Subtitles` | `[]string` | `["Multi-Subs"]` |
-| `Language` | `[]string` | `["English", "Jap"]` |
-| `FileChecksum` | `string` | `"1234ABCD"` |
-| `FileExtension` | `string` | `"mkv"` |
-| `Series` | `[]miyo.SeriesInfo`| Structured nested data (for batches/ranges) |
+The library includes an extensive suite of tests validating diverse filename conventions. To run the tests:
 
-*Note: Slices are used for fields that can have multiple values (e.g., dual audio tracks, episode ranges).*
+```bash
+go test -v ./...
+```
 
-## How does it work?
+For large-scale heuristic quality control, the repository includes a Python-based auditor (`local_testing/audit_parser.py`) that analyzes parsed outputs against diagnostic rules to flag suspicious parses (such as unstripped file extensions or metadata leaking into titles).
 
-Anime filenames are notoriously inconsistent. Regex-based parsers fail because they cannot cover the combinatorial explosion of naming conventions. Miyo processes filenames through a 6-stage pipeline:
-
-1. **Tokenize:** Splits input into tokens, normalizing full-width runes, and detecting brackets, delimiters, and text boundaries.
-2. **Analyze Groups:** Maps bracket pairs `()`, `[]`, `「」` to establish isolated metadata zones.
-3. **Lexicon Matching:** Matches tokens against known technical keywords (e.g., "HEVC", "WEB-DL"), assigning base probabilities.
-4. **Context Scanning:** Pattern-based rules scan for dynamic data (checksums, dates, sequence numbers, Japanese episode markers).
-5. **Score & Resolve:** Context-aware rules adjust confidence based on position and neighbors. Ties are broken using a strict rank hierarchy. The highest-scoring possibility wins.
-6. **Compose:** Assembles the resolved tokens into the final, clean `Metadata` struct.
+---
 
 ## License
 
-Miyo is licensed under the **Mozilla Public License 2.0 (MPL 2.0)**.
-
-**What does this mean practically?**
-* **You CAN** use Miyo in any project—open-source, closed-source, commercial, or personal. You do not have to open-source your application.
-* **You MUST** share any modifications you make to Miyo itself. If you fix a bug, improve the scoring logic, or add new lexicon terms to Miyo's source files, you are legally required to publish those changes back to the community under the same MPL 2.0 license. 
-
-For the exact legal terms, see the `LICENSE` file.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

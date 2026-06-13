@@ -1,5 +1,4 @@
 package miyo
-
 var tagTieBreakOrder = map[Tag]int{
 	TagBracket:             100,
 	TagDelimiter:           100,
