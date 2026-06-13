@@ -1,0 +1,61 @@
+#research material
+/local_testing/
+
+
+# Local title corpus, generated parser dumps, and analysis helpers
+/titles.txt
+/miyo-title-parse-results.jsonl
+/*.jsonl
+/scripts/
+/analyze_errors.py
+/dump_miyo_titles.py
+/compare_miyo_titles.py
+/manual-analysis/
+/analysis/
+/fixtures/
+/test-fixtures/
+
+# Development-only parser strengthening tests
+/*_test.go
+!/miyo_test.go
+/titles_corpus_test.go
+/fixture_harness_test.go
+/upstream_*_test.go
+/corpus_*_test.go
+
+# Go build and test artifacts
+.gocache/
+/bin/
+/build/
+/dist/
+/*.exe
+/*.test
+/*.out
+/coverage.out
+/coverage.html
+/coverage/
+*.coverprofile
+*.prof
+*.pprof
+
+# Local Go workspace files
+/go.work
+/go.work.sum
+
+# Logs and local environment files
+*.log
+.env
+.env.*
+!.env.example
+/tmp/
+/temp/
+
+# Editor and OS noise
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
